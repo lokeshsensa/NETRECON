@@ -5,9 +5,9 @@ const getBaseUrl = () => {
   if (typeof window !== 'undefined' && window.location) {
     const protocol = window.location.protocol || 'http:';
     const hostname = window.location.hostname || 'localhost';
-    return `${protocol}//${hostname}:8000/api`;
+    return `${protocol}//${hostname}:8000/api/`;
   }
-  return 'http://localhost:8000/api';
+  return 'http://localhost:8000/api/';
 };
 
 const api = axios.create({
@@ -20,7 +20,7 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   // Prevent leading slash from stripping /api in Axios URL resolution
-  if (config.url && config.url.startsWith('/') && !config.url.startsWith('/api')) {
+  if (config.url && config.url.startsWith('/')) {
     config.url = config.url.substring(1);
   }
   const token = localStorage.getItem('netrecon_token');

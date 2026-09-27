@@ -6,6 +6,27 @@ import StatCard from '../components/StatCard';
 import ScanModal from '../components/ScanModal';
 import ScanProgressModal from '../components/ScanProgressModal';
 
+const CustomChartTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const item = payload[0];
+    const dataObj = item.payload || {};
+    const label = dataObj.name || (dataObj.port ? `Port ${dataObj.port}` : item.name) || item.dataKey || 'Metric';
+    const val = item.value !== undefined ? item.value : (dataObj.count !== undefined ? dataObj.count : dataObj.value);
+    const itemColor = dataObj.color || item.color || item.fill || '#3B82F6';
+
+    return (
+      <div className="bg-[#090D16] border border-[#374151] px-3.5 py-2 rounded-lg shadow-2xl flex items-center space-x-2.5 font-mono text-xs z-50">
+        <span className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: itemColor }} />
+        <span className="font-semibold text-gray-200 tracking-wide">{label}:</span>
+        <span className="font-extrabold text-sm tracking-wider" style={{ color: itemColor }}>
+          {val !== undefined ? val : 0}
+        </span>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,8 +78,8 @@ export default function Dashboard() {
   ];
 
   const riskData = [
-    { name: 'Critical', count: summary?.risk_overview?.CRITICAL || 0, color: '#7F1D1D' },
-    { name: 'High', count: summary?.risk_overview?.HIGH || 0, color: '#EF4444' },
+    { name: 'Critical', count: summary?.risk_overview?.CRITICAL || 0, color: '#EF4444' },
+    { name: 'High', count: summary?.risk_overview?.HIGH || 0, color: '#F97316' },
     { name: 'Medium', count: summary?.risk_overview?.MEDIUM || 0, color: '#F59E0B' },
     { name: 'Low', count: summary?.risk_overview?.LOW || 0, color: '#3B82F6' },
     { name: 'Info', count: summary?.risk_overview?.INFO || 0, color: '#10B981' },
@@ -68,6 +89,14 @@ export default function Dashboard() {
   const servicePieData = Object.entries(summary?.service_distribution || {}).map(([name, value], idx) => ({
     name,
     value,
+    color: serviceColors[idx % serviceColors.length]
+  }));
+
+  const topOpenPortsData = (summary?.top_open_ports || []).map((item, idx) => ({
+    ...item,
+    port: item.port,
+    name: item.port ? `Port ${item.port}` : 'Port',
+    count: item.count || 0,
     color: serviceColors[idx % serviceColors.length]
   }));
 
@@ -137,7 +166,7 @@ export default function Dashboard() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#0B0F19', borderColor: '#1F2937', color: '#fff', fontSize: '12px' }} />
+                <Tooltip content={<CustomChartTooltip />} />
                 <Legend formatter={(value) => <span className="text-xs text-gray-300 font-mono">{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
@@ -152,11 +181,15 @@ export default function Dashboard() {
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary?.top_open_ports || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={topOpenPortsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="port" stroke="#6B7280" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
                 <YAxis stroke="#6B7280" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <Tooltip contentStyle={{ backgroundColor: '#0B0F19', borderColor: '#1F2937', color: '#fff', fontSize: '12px' }} />
-                <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                <Tooltip content={<CustomChartTooltip />} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {topOpenPortsData.map((entry, index) => (
+                    <Cell key={`port-cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -186,7 +219,7 @@ export default function Dashboard() {
                     <Cell key={`service-cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#0B0F19', borderColor: '#1F2937', color: '#fff', fontSize: '12px' }} />
+                <Tooltip content={<CustomChartTooltip />} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -203,7 +236,7 @@ export default function Dashboard() {
               <BarChart data={riskData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="name" stroke="#6B7280" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
                 <YAxis stroke="#6B7280" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <Tooltip contentStyle={{ backgroundColor: '#0B0F19', borderColor: '#1F2937', color: '#fff', fontSize: '12px' }} />
+                <Tooltip content={<CustomChartTooltip />} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                   {riskData.map((entry, index) => (
                     <Cell key={`risk-cell-${index}`} fill={entry.color} />

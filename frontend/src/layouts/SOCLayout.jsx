@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -40,18 +41,27 @@ export default function SOCLayout({ children }) {
   // Poll Backend Health & Active Scans
   useEffect(() => {
     const checkState = async () => {
+      // 1. Backend Health Check
       try {
         const healthRes = await api.get('/health');
-        setBackendHealth({ healthy: healthRes.data.status === 'healthy', nmap: healthRes.data.nmap_available });
+        setBackendHealth({
+          healthy: healthRes.data.status === 'healthy',
+          nmap: healthRes.data.nmap_available
+        });
+      } catch (err) {
+        if (!axios.isCancel(err) && err.name !== 'CanceledError') {
+          setBackendHealth({ healthy: false, nmap: false });
+        }
+      }
 
-        // Check if any scan job is currently running
+      // 2. Active Scans Check
+      try {
         const scansRes = await api.get('/scans');
         const runningScan = scansRes.data.find(
           (s) => s.status !== 'COMPLETED' && s.status !== 'FAILED' && s.status !== 'CANCELLED'
         );
         setActiveScan(runningScan || null);
       } catch (err) {
-        setBackendHealth({ healthy: false, nmap: false });
         setActiveScan(null);
       }
     };
